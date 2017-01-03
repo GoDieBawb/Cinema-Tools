@@ -19,8 +19,10 @@ import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.light.Light;
 import com.jme3.light.PointLight;
+import com.jme3.light.SpotLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
@@ -28,6 +30,7 @@ import com.jme3.scene.shape.Box;
 import com.jme3.shadow.AbstractShadowRenderer;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.PointLightShadowRenderer;
+import com.jme3.shadow.SpotLightShadowRenderer;
 import com.jme3.texture.Texture;
 import java.util.ArrayList;
 import org.lwjgl.opengl.Display;
@@ -79,6 +82,7 @@ public class LightGui extends Gui {
         createDeleteButton();
         createColorPicker();
         createMakeFireButton();
+        createMakeSpotButton();
         createSlider();
     }
         
@@ -231,6 +235,24 @@ public class LightGui extends Gui {
         
     }     
     
+    private void createMakeSpotButton() {
+        
+        Button spotButton = new Button(app, Display.getWidth()/10, Display.getHeight()/20) {
+        
+            @Override
+            public void act() {
+                createNewSpotLight();
+            }
+            
+        };
+        
+        app.getGuiNode().attachChild(spotButton);
+        spotButton.setLocalTranslation(Display.getWidth()/3 + (Display.getWidth()/10)*5f, Display.getHeight()/5f - Display.getHeight()/15f, 0);
+        spotButton.setText("Spotlight");
+        buttonList.add(spotButton);
+        
+    }    
+    
     private void createDeleteButton() {
         
         Button deleteButton = new Button(app, Display.getWidth()/10, Display.getHeight()/15) {
@@ -255,8 +277,7 @@ public class LightGui extends Gui {
                 else {
                     selectedLight = null;
                 }
-                
-                System.out.println("Shadows List: " + SHADOW_LIST);
+
                 updateOptions();
                 
             }
@@ -325,26 +346,26 @@ public class LightGui extends Gui {
     }
 
     private void createNewFireLight() {
-        FireLight fl   = new FireLight(app.getStateManager());
-        selectedLight   = fl;
+        FireLight fl  = new FireLight(app.getStateManager());
+        selectedLight = fl;
         app.getRootNode().addLight(fl);
         fl.setPosition(app.getCamera().getLocation());
         LIGHT_LIST.add(fl);
         createPointShadowFilter(fl);
         updateOptions();
-    }    
+    }      
     
     private void createPointShadowFilter(PointLight pl) {
         
         final int SHADOWMAP_SIZE=1024;
         
         AssetManager assetManager = app.getAssetManager();
-        ViewPort viewPort         = app.getViewPort();
+        ViewPort     viewPort     = app.getViewPort();
         
-        PointLightShadowRenderer dlsr = new PointLightShadowRenderer(assetManager, SHADOWMAP_SIZE);
-        dlsr.setLight(pl);
-        viewPort.addProcessor(dlsr);
-        SHADOW_LIST.add(dlsr);
+        PointLightShadowRenderer plsr = new PointLightShadowRenderer(assetManager, SHADOWMAP_SIZE);
+        plsr.setLight(pl);
+        viewPort.addProcessor(plsr);
+        SHADOW_LIST.add(plsr);
     
     }
     
@@ -371,6 +392,31 @@ public class LightGui extends Gui {
         
     }
     
+    private void createNewSpotLight() {
+        SpotLight sl  = new SpotLight();
+        selectedLight = sl;
+        app.getRootNode().addLight(sl);
+        sl.setPosition(app.getCamera().getLocation());
+        sl.setDirection(app.getCamera().getDirection());
+        LIGHT_LIST.add(sl);
+        createSpotShadowFilter(sl);
+        updateOptions();
+    }     
+    
+    private void createSpotShadowFilter(SpotLight sl) {
+        
+        final int SHADOWMAP_SIZE=1024;
+        
+        AssetManager assetManager = app.getAssetManager();
+        ViewPort     viewPort     = app.getViewPort();
+        
+        SpotLightShadowRenderer slsr = new SpotLightShadowRenderer(assetManager, SHADOWMAP_SIZE);
+        slsr.setLight(sl);
+        viewPort.addProcessor(slsr);
+        SHADOW_LIST.add(slsr);
+    
+    }  
+    
     private void updateListText() {
     
         Node textNode = (Node) textArea.getChild("Text Node");
@@ -386,12 +432,17 @@ public class LightGui extends Gui {
             BitmapText text = new BitmapText(font);
             String prefix;
             
-            if (currentLight instanceof PointLight)
+            
+            if (currentLight instanceof FireLight)
+                prefix = "Fire";            
+            else if (currentLight instanceof PointLight)
                 prefix = "Point";
             else if (currentLight instanceof DirectionalLight)
                 prefix = "Directional";
             else if (currentLight instanceof AmbientLight)
                 prefix = "Ambient";
+            else if (currentLight instanceof SpotLight)
+                prefix = "Spot";
             else
                 prefix = "";
             
@@ -428,6 +479,11 @@ public class LightGui extends Gui {
             app.getGuiNode().attachChild(cp);
         }
         
+        else if (selectedLight instanceof SpotLight) {
+            app.getGuiNode().attachChild(slider);
+            app.getGuiNode().attachChild(cp);
+        }
+        
         updateListText();
         
     }
@@ -451,6 +507,12 @@ public class LightGui extends Gui {
             slider.setMax(2);
             selectedLight.setColor(selectedLight.getColor().mult(slider.getCurrentValue()));
         }
+        
+        if (selectedLight instanceof SpotLight) {
+            slider.setMin(0);
+            slider.setMax(FastMath.HALF_PI);
+            ((SpotLight)selectedLight).setSpotOuterAngle(slider.getCurrentValue());
+        }        
         
     }
     

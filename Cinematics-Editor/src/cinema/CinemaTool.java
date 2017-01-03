@@ -2,7 +2,6 @@ package cinema;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.renderer.RenderManager;
-import com.jme3.scene.Node;
 
 /**
  * This is the Main Class of your Game. You should only do initialization here.
@@ -19,19 +18,20 @@ public class CinemaTool extends SimpleApplication {
         app.start();
     }
 
+    
+    public CinemaTool(String scenePath) {
+        this.scenePath = scenePath;
+    }    
+    
     public CinemaTool() {
     
     }    
     
-    public CinemaTool(String scenePath) {
-        this.scenePath = scenePath;
-    }
-    
     @Override
     public void simpleInitApp() { 
         appManager = new AppManager();
-        stateManager.attach(appManager);
         appManager.setScenePath(scenePath);
+        stateManager.attach(appManager);
         getFlyByCamera().setMoveSpeed(5);
     }
     
